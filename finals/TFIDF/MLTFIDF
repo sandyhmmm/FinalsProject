@@ -5,10 +5,14 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.linalg import SparseVector
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
+import org.apache.spark.mllib.linalg.Vectors
+from array import array
+
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 import re
-from pyspark.mllib.classification import NaiveBayes
+from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
+from pyspark.ml import Pipeline
 
 def review_to_words(raw_review):
     # Function to convert a raw review to a string of words
@@ -38,7 +42,10 @@ parts = rows.map(lambda l: l.split("\t"))
 
 review = parts.map(lambda p: Row(id=p[0], label=float(p[1]), 
 	review=review_to_words(p[2])))
+
+
 schemeReview = sqlContext.createDataFrame(review)
+(trainingData, testData) = schemeReview.randomSplit([0.6, 0.4])
 tokenizer = Tokenizer(inputCol="review", outputCol="words")
 wordsData = tokenizer.transform(schemeReview)
 hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=300)
@@ -48,21 +55,40 @@ idfModel = idf.fit(featurizedData)
 rescaledData = idfModel.transform(featurizedData)
 selectData = rescaledData.select("label","features")
 
-lp = selectData.map(lambda x : LabeledPoint(x.label,x.features))
+#(trainingData, testData) = selectData.randomSplit([0.6, 0.4])
+lr = LogisticRegression(maxIter=5, regParam=0.01)
+pipeline = Pipeline(stages=[tokenizer, hashingTF,idf, lr])
+model = pipeline.fit(trainingData)
+selected = model.transform(testData).select('review', 'label', 'prediction')
 
-(trainingData, testData) = lp.randomSplit([0.6, 0.4])
+# Build a parameter grid.
+paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [10, 20, 40]).addGrid(lr.regParam, [0.01, 0.1, 1.0]).build()
 
- 
-model = NaiveBayes.train(trainingData,1.0)
+#Set up cross-validation.
+cv = CrossValidator().setNumFolds(3).setEstimator(pipeline).setEstimatorParamMaps(paramGrid).setEvaluator(BinaryClassificationEvaluator())
 
-predictionAndLabel = testData.map(lambda p : (model.predict(p.features), p.label))
-accuracy = 100 * predictionAndLabel.filter(lambda (x, v): x == v).count() / testData.count()
-print accuracy
+#Fit a model with cross-validation.
+cvModel = cv.fit(trainingData)
 
 
-#lr = LinearRegression(maxIter=5, regParam=0.0)
-#model = lr.fit(trainingData)
-#result =  model.transform(testData)
-#evaluator = RegressionEvaluator()
-#evaluator.evaluate(result, {evaluator.metricName: "r2"})
-#evaluator.evaluate(result, {evaluator.metricName: "rmse"})
+
+testTransform = cvModel.transform(testData)
+
+predictions = testTransform.select("review", "prediction", "label")
+
+predictionsAndLabels = predictions.map(lambda x : (x[1], x[2]))
+
+trainErr = predictionsAndLabels.filter(lambda r : r[0] != r[1]).count() / float(testData.count())
+
+print("TrainErr: "+str(trainErr))
+
+BinaryClassificationEvaluator().evaluate(testTransform)    
+
+#for row in testTransform.select("id", "label", "prediction").collect():
+#    print "id" + row[0] + ", label=" + str(row[1]) + ", prediction=" + str(row[2])
+
+
+
+
+
+
