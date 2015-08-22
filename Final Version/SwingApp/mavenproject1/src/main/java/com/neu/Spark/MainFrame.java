@@ -43,8 +43,7 @@ public class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         initComponents();
 
-        String accessKey = "AKIAIJ25O5FYMDAFXIXA";
-        String secretKey = "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";
+        
         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
 
         ClientConfiguration clientConfig = new ClientConfiguration();
