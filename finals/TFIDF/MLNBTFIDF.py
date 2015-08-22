@@ -3,7 +3,7 @@ from pyspark.ml.feature import HashingTF, IDF, Tokenizer
 from pyspark.mllib.regression import LabeledPoint, LinearRegressionWithSGD
 from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.linalg import SparseVector
-from pyspark.ml.classification import LogisticRegression
+from pyspark.mllib.classification import NaiveBayes
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 import org.apache.spark.mllib.linalg.Vectors
 from array import array
@@ -45,7 +45,8 @@ review = parts.map(lambda p: Row(id=p[0], label=float(p[1]),
 
 
 schemeReview = sqlContext.createDataFrame(review)
-(trainingData, testData) = schemeReview.randomSplit([0.6, 0.4])
+
+
 tokenizer = Tokenizer(inputCol="review", outputCol="words")
 wordsData = tokenizer.transform(schemeReview)
 hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=300)
@@ -55,14 +56,18 @@ idfModel = idf.fit(featurizedData)
 rescaledData = idfModel.transform(featurizedData)
 selectData = rescaledData.select("label","features")
 
-#(trainingData, testData) = selectData.randomSplit([0.6, 0.4])
-lr = LogisticRegression(maxIter=5, regParam=0.01)
-pipeline = Pipeline(stages=[tokenizer, hashingTF,idf, lr])
+lp = selectData.map(lambda x : LabeledPoint(x.label,x.features))
+
+(trainingData, testData) = lp.randomSplit([0.6, 0.4])
+
+nb = NaiveBayes.train(trainingData,1.0)
+
+pipeline = Pipeline(stages=[tokenizer, hashingTF,idf, nb])
 model = pipeline.fit(trainingData)
 selected = model.transform(testData).select('review', 'label', 'prediction')
 
 # Build a parameter grid.
-paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [300, 400]).addGrid(lr.regParam, [0.01, 0.1, 1.0]).build()
+paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [300, 400]).addGrid(nb.regParam, [0.01, 0.1, 1.0]).build()
 
 #Set up cross-validation.
 cv = CrossValidator().setNumFolds(3).setEstimator(pipeline).setEstimatorParamMaps(paramGrid).setEvaluator(BinaryClassificationEvaluator())
