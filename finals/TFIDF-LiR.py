@@ -55,10 +55,3 @@ evaluator = BinaryClassificationEvaluator()
 evaluator.evaluate(result, {evaluator.metricName: "areaUnderPR"})
 evaluator.evaluate(result, {evaluator.metricName: "areaUnderROC"})
 
-
-#lr = LinearRegression(maxIter=5, regParam=0.0)
-#model = lr.fit(trainingData)
-#result =  model.transform(testData)
-#evaluator = RegressionEvaluator()
-#evaluator.evaluate(result, {evaluator.metricName: "r2"})
-#evaluator.evaluate(result, {evaluator.metricName: "rmse"})

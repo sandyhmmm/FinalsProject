@@ -56,13 +56,13 @@ lp = selectData.map(lambda x : LabeledPoint(x.label,x.features))
 model = NaiveBayes.train(trainingData,1.0)
 
 predictionAndLabel = testData.map(lambda p : (model.predict(p.features), p.label))
-accuracy = 100 * predictionAndLabel.filter(lambda (x, v): x == v).count() / testData.count()
+accuracy = 100 * predictionAndLabel.filter(lambda (x, v): x == v ).count() / testData.count()
 print accuracy
 
+fp = predictionAndLabel.filter(lambda (x, v): x == 1 ).filter(lambda(x,v): v==0).count()
+tp = predictionAndLabel.filter(lambda (x, v): x == v ).filter(lambda(x,v): v==1).count()
+totalpositive = predictionAndLabel.filter(lambda(x,v): v==1).count()
+recall = 100*tp/totalpositive
+precision = 100*tp/(tp+fp)
 
-#lr = LinearRegression(maxIter=5, regParam=0.0)
-#model = lr.fit(trainingData)
-#result =  model.transform(testData)
-#evaluator = RegressionEvaluator()
-#evaluator.evaluate(result, {evaluator.metricName: "r2"})
-#evaluator.evaluate(result, {evaluator.metricName: "rmse"})
+
