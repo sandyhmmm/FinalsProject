@@ -36,7 +36,7 @@ def review_to_words(raw_review):
     return " ".join( meaningful_words)   
 
 stops = set(stopwords.words("english")) 
-lines = sc.textFile("FinalProject/labeledTrainData.tsv")
+lines = sc.textFile("s3://spark-project-data/unlabeledTrainData.tsv")
 rows = lines.zipWithIndex().filter(lambda (row,index): index > 0).keys()
 parts = rows.map(lambda l: l.split("\t"))
 

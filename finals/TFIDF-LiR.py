@@ -55,3 +55,11 @@ evaluator = BinaryClassificationEvaluator()
 evaluator.evaluate(result, {evaluator.metricName: "areaUnderPR"})
 evaluator.evaluate(result, {evaluator.metricName: "areaUnderROC"})
 
+
+
+predictionsAndLabels = predictions.map(lambda x : (x[0], x[1]))
+
+trainErr = predictionsAndLabels.filter(lambda r : r[0] != r[1]).count() / float(testData.count())
+
+print("TrainErr: "+str(trainErr))
+
