@@ -111,7 +111,7 @@ counts = lines.flatMap(lambda line: line.split(" "))\
              .reduceByKey(lambda a, b: a+b)
 
 
-text = lines
+text = lines.map(lambda line: line)
 #creating vectors for prediction
 testreview = text.map(lambda t: Row(sentence = paragraph_to_wordlist(t)))
 testreviewDF = sqlContext.createDataFrame(testreview)
