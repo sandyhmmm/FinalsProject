@@ -81,11 +81,11 @@ predictionsAndLabels = predictions.map(lambda x : (x[1], x[2]))
 trainErr = predictionsAndLabels.filter(lambda r : r[0] != r[1]).count() / float(testData.count())
 
 print("TrainErr: "+str(trainErr))
+  
 
-BinaryClassificationEvaluator().evaluate(testTransform)    
-
-#for row in testTransform.select("id", "label", "prediction").collect():
-#    print "id" + row[0] + ", label=" + str(row[1]) + ", prediction=" + str(row[2])
+evaluator = BinaryClassificationEvaluator()
+evaluator.evaluate(testTransform, {evaluator.metricName: "areaUnderPR"})
+evaluator.evaluate(testTransform, {evaluator.metricName: "areaUnderROC"})
 
 
 

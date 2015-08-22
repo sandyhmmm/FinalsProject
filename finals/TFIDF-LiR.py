@@ -5,7 +5,7 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.linalg import SparseVector
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 import re
 
@@ -31,7 +31,7 @@ def review_to_words(raw_review):
     return " ".join( meaningful_words)   
 
 stops = set(stopwords.words("english")) 
-lines = sc.textFile("s3://spark-project-data/labeledTrainData.tsv")
+lines = sc.textFile("FinalProject/labeledTrainData.tsv")
 rows = lines.zipWithIndex().filter(lambda (row,index): index > 0).keys()
 parts = rows.map(lambda l: l.split("\t"))
 
@@ -40,7 +40,7 @@ review = parts.map(lambda p: Row(id=p[0], label=float(p[1]),
 schemeReview = sqlContext.createDataFrame(review)
 tokenizer = Tokenizer(inputCol="review", outputCol="words")
 wordsData = tokenizer.transform(schemeReview)
-hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=50)
+hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=300)
 featurizedData = hashingTF.transform(wordsData)
 idf = IDF(inputCol="rawFeatures", outputCol="features")
 idfModel = idf.fit(featurizedData)
